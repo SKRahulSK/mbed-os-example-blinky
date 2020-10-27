@@ -4,19 +4,30 @@
  */
 
 #include "mbed.h"
-
+#include "mbed_events.h"
 
 // Blinking rate in milliseconds
 #define BLINKING_RATE     500ms
 
+DigitalOut led(LED1);
+InterruptIn btn(PA_5);
+bool var = true;
+
+// create an event queue
+EventQueue queue;
+
+void interrupt_handler() {
+    led = !led;
+    printf("Button pressed\n");
+}
 
 int main()
 {
-    // Initialise the digital pin LED1 as an output
-    DigitalOut led(LED1);
-
-    while (true) {
-        led = !led;
-        ThisThread::sleep_for(BLINKING_RATE);
-    }
+    // create a thread that'll run the event queue's dispatch function
+    Thread eventThread;
+    eventThread.start(callback(&queue, &EventQueue::dispatch_forever));
+    
+    btn.fall(queue.event(&interrupt_handler));
+    
+   while(1);
 }
